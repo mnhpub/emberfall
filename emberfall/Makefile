@@ -41,3 +41,19 @@ test-authority: ## Real local Worker/SQLite and browser reconnect smoke
 .PHONY: test-colonies
 test-colonies: ## Real local Worker and browser colony trade round trip
 	npm run test:colonies
+
+.PHONY: test-api
+test-api: ## Curl contract suite: health, auth gate, room presence, signed authority commands
+	bash tests/e2e/api.sh
+
+.PHONY: test-intake
+test-intake: ## Curl contract suite: DXF upload gates, GLB conversion, job lookup safety
+	PYTHON=$(PYTHON) bash tests/e2e/intake.sh
+
+.PHONY: test-ui
+test-ui: ## Playwright robustness suite: boot, persistence, bad input, outage, bad token, phone layout
+	PYTHON=$(PYTHON) node --experimental-strip-types --test tests/e2e/ui.e2e.ts
+
+.PHONY: test-robust
+test-robust: ## Every suite: unit, build, curl API/intake, Playwright UI and browser smokes
+	$(MAKE) check test build asset-smoke test-api test-intake test-ui test-browser test-authority test-colonies
