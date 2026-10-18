@@ -29,8 +29,11 @@ Depth is a property of the water, not a separate terrain class. A ship grounds i
 - The waterline is state, not a constant. Only the **architect** can raise or lower it.
 - Each change is a recorded flood layer: from which level, to which, when, and by whom. Floods stack in order.
 - Raising the waterline submerges land and can drown the pillar; lowering it exposes older ground again.
+- **Wreckage:** a rising flood turns the ground it drowns into wreckage. Former land and whatever stood on it stay on the tank floor as a wreck record, covering the band between the old and new levels.
+- A wreck can be **dived** only while water still covers some of it. Players can salvage each wreck once. Lowering the waterline leaves it above water as ruin, which can no longer be dived.
+- Wreckage is where drowned pre-flood layers become salvage. Dive finds are the source of older relics.
 - The architect's authority is a role check in the command, not a player choice. Players can only act on the world at the level it is set.
-- Model: `packages/world/flood.ts` (`setWaterline`, `isLandAt`, `pillarAboveWater`). Levels run from 0 to 120 m.
+- Model: `packages/world/flood.ts` (`setWaterline`, `diveable`, `salvageWreck`, `isLandAt`, `pillarAboveWater`). Levels run from 0 to 120 m.
 
 ## 3. Hydrology
 

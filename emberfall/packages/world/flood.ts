@@ -5,14 +5,16 @@ import { WATERLINE, breaksSurface, LODESTONE, type Lodestone } from "./compass.t
 
 export type Role = "architect" | "player";
 export type FloodRecord = { id: string; tick: number; from: number; to: number; by: string };
-export type LevelState = { tick: number; waterline: number; floods: FloodRecord[] };
+// Ground and structures that a rising flood drowned. They stay as wreckage for diving until they are salvaged.
+export type Wreck = { id: string; floodId: string; bottom: number; top: number; salvaged: boolean };
+export type LevelState = { tick: number; waterline: number; floods: FloodRecord[]; wrecks: Wreck[] };
 
 // Floor and top of the tank, metres above the tank floor.
 export const MIN_WATERLINE = 0;
 export const MAX_WATERLINE = 120;
 
 export function initialLevel(waterline = WATERLINE): LevelState {
-  return { tick: 0, waterline, floods: [] };
+  return { tick: 0, waterline, floods: [], wrecks: [] };
 }
 
 // Architect command: move the waterline to `to` at time `tick`. Returns the same state when nothing changes.
@@ -35,7 +37,24 @@ export function setWaterline(
     to,
     by: actor,
   };
-  return { tick, waterline: to, floods: [...s.floods, record] };
+  // A rising flood drowns the band between the old and new levels. That band becomes wreckage.
+  const wrecks =
+    to > s.waterline
+      ? [...s.wrecks, { id: `wreck-${record.id}`, floodId: record.id, bottom: s.waterline, top: to, salvaged: false }]
+      : s.wrecks;
+  return { tick, waterline: to, floods: [...s.floods, record], wrecks };
+}
+
+// Wreckage can be dived only while water still covers some of it: the waterline must be above the wreck's bottom.
+export const diveable = (w: Wreck, s: LevelState) => !w.salvaged && s.waterline > w.bottom;
+
+// Dive and salvage one wreck. A wreck is taken once; the record stays so the history is never rewritten.
+export function salvageWreck(s: LevelState, wreckId: string, actor: string): LevelState {
+  const wreck = s.wrecks.find((w) => w.id === wreckId);
+  if (!wreck) throw new Error(`unknown wreck ${wreckId}`);
+  if (wreck.salvaged) throw new Error("this wreck has already been salvaged");
+  if (!diveable(wreck, s)) throw new Error("this wreck is above the water and cannot be dived");
+  return { ...s, wrecks: s.wrecks.map((w) => (w.id === wreckId ? { ...w, salvaged: true } : w)) };
 }
 
 // Land is any ground that stands above the waterline.
