@@ -20,7 +20,7 @@ test('a flood removes drowned objects, records them as wreckage, and keeps the s
   assert.deepEqual(r.lost.map((o) => o.id).sort(), ['colony-1', 'craft-1', 'village-1']);
   assert.deepEqual(r.objects.map((o) => o.id).sort(), ['hill-structure', 'ship-1']);
   assert.equal(r.objects.find((o) => o.id === 'ship-1')!.elevation, 50, 'the ship floats at the new waterline');
-  assert.deepEqual(r.level.wrecks.at(-1)!.lost, ['colony-1', 'craft-1', 'village-1']);
+  assert.deepEqual([...r.level.wrecks.at(-1)!.lost!].sort(), ['colony-1', 'craft-1', 'village-1']);
 });
 
 test('lowering the waterline restores nothing', () => {
