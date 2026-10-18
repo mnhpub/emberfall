@@ -357,16 +357,20 @@ test("8-bit soundtrack waits for a gesture, plays, and mutes from the header", a
   }
 });
 
-test("failed boarding keeps its reason when the helm is pressed afterwards", async () => {
+test("unavailable ferry actions are disabled with a reason, and earlier messages stay visible", async () => {
   const { context, page, pageErrors } = await openPage();
   try {
     await chooseShipwright(page);
-    // Starting position is far from the gangway, so boarding must fail with a specific reason.
-    await page.getByRole("button", { name: "Board Endurance ferry" }).click();
-    await page.getByText(/Walk to the Endurance gangway to board/).waitFor();
-    await page.getByRole("button", { name: /H · Take ferry helm/ }).click();
-    await page.getByText(/You are not aboard Endurance yet/).waitFor();
-    assert.equal(await page.getByText("Board the ferry first.").count(), 0);
+    // Starting position is far from the gangway: boarding is blocked, and the button says why.
+    const board = page.getByRole("button", { name: "Board Endurance ferry" });
+    assert.notEqual(await board.getAttribute("disabled"), null, "board is disabled when out of reach");
+    await page.locator(".ferry-blocker", { hasText: "Walk to the Endurance gangway to board" }).waitFor();
+    // E boards the skiff. Pressing H afterwards reports the ferry, and the skiff message moves into history.
+    await page.keyboard.press("KeyE");
+    await page.locator(".sea-message", { hasText: "Aboard. WASD to sail" }).waitFor();
+    await page.keyboard.press("KeyH");
+    await page.locator(".sea-message", { hasText: "You are not aboard Endurance yet" }).waitFor();
+    await page.locator(".message-history li", { hasText: "Aboard. WASD to sail" }).waitFor();
     assert.deepEqual(pageErrors, []);
   } finally {
     await context.close();

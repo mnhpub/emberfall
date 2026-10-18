@@ -1,5 +1,6 @@
 import type { State, Command } from "../../packages/game-core";
 import { FERRY, separation } from "../../packages/vessels";
+import { boardBlocker, helmBlocker } from "../../packages/game-core/ferry";
 
 // Where the gold wheel is relative to the walker, and the key that closes the gap.
 export function helmHint(local: { x: number; z: number }) {
@@ -29,6 +30,10 @@ export default function FerryPanel({
 }) {
   const f = state.ferry,
     p = f.passenger;
+  const boardWhy = boardBlocker(state);
+  const helmWhy = helmBlocker(state);
+  // One reason on screen: what is blocking the thing the player is most likely to do next.
+  const reason = state.mode === "ferry" ? helmWhy : boardWhy;
   return (
     <section className="ferry-controls">
       <h3>Endurance ferry</h3>
@@ -52,17 +57,26 @@ export default function FerryPanel({
           {helmHint(p.local)}
         </p>
       )}
+      {reason && <p className="ferry-blocker">{reason}</p>}
       <div className="sea-actions">
         <button onClick={() => dispatch({ type: "ferry-shuttle" })}>
           Shuttle: Haven ↔ ferry pier
         </button>
-        <button onClick={() => dispatch({ type: "ferry-board" })}>
+        <button
+          onClick={() => dispatch({ type: "ferry-board" })}
+          disabled={!!boardWhy}
+          title={boardWhy ?? undefined}
+        >
           Board Endurance ferry
         </button>
         <button onClick={() => dispatch({ type: "ferry-exit" })}>
           Exit ferry at gangway
         </button>
-        <button onClick={() => dispatch({ type: "ferry-helm" })}>
+        <button
+          onClick={() => dispatch({ type: "ferry-helm" })}
+          disabled={!!helmWhy}
+          title={helmWhy ?? undefined}
+        >
           H · {p?.station === "helm" ? "Release" : "Take"} ferry helm
         </button>
         <button onClick={() => dispatch({ type: "ferry-sails" })}>

@@ -48,6 +48,12 @@ export default function App() {
   const [state, setState] = useState<State>(load);
   const simulation = useRef<State>(state);
   const [storage, setStorage] = useState("Local save ready");
+  // Recent game messages, so a newer message never hides the reason for an earlier one.
+  const [log, setLog] = useState<string[]>([]);
+  useEffect(() => {
+    if (!state.message) return;
+    setLog((prev) => (prev.at(-1) === state.message ? prev : [...prev, state.message].slice(-8)));
+  }, [state.message]);
   const authority = useRef<AuthorityClient | null>(null);
   const queuedAction = useRef<Intent | null>(null);
   const localBackup = useRef<State | null>(null);
@@ -459,6 +465,15 @@ export default function App() {
           }
         />
       )}
+      <ol className="message-history" aria-label="Earlier messages">
+        {log
+          .filter((m) => m !== state.message)
+          .slice(-3)
+          .reverse()
+          .map((m, i) => (
+            <li key={i}>{m}</li>
+          ))}
+      </ol>
       <footer className="sea-message" role="status">
         {state.message}
       </footer>
