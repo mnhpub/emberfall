@@ -1,6 +1,8 @@
 // Compass model for the flat world. The lodestone is a very large black rock at a fixed point. A ship's needle points
 // at it, but the needle is deflected by the rock's field, so the reading changes as the ship moves around it.
 //
+// The world is an aquarium: a rectangular tank full of water with the lodestone a tall pillar standing in the middle.
+// Seen from above the pillar is a point, so navigation stays two-dimensional on the surface.
 // Conventions: positions are { x, z } in metres. Headings are radians clockwise from +z (north in the game's convention).
 // A compass reading is the true bearing to the rock plus a deviation that depends on where the ship is.
 
@@ -8,15 +10,21 @@ export type Point = { x: number; z: number };
 
 export type Lodestone = {
   at: Point;
+  // Height of the pillar above the tank floor, metres. Water fills the tank to `waterline`.
+  height: number;
   // Largest deviation near the rock, radians. Real compasses deflect by a few degrees; this is deliberately larger for play.
   amplitude: number;
   // Distance over which the deviation fades, metres.
   falloff: number;
 };
 
-export const LODESTONE: Lodestone = { at: { x: 0, z: 0 }, amplitude: 0.5, falloff: 2000 };
+export const LODESTONE: Lodestone = { at: { x: 0, z: 0 }, height: 60, amplitude: 0.5, falloff: 2000 };
 
-// Flat, rectangular world. The bounds are a parameter so the size can be tuned without touching the model.
+// Water fills the tank to this height above the floor. Anything taller than this is land above the surface.
+export const WATERLINE = 40;
+export const breaksSurface = (rock: Lodestone = LODESTONE, waterline = WATERLINE) => rock.height > waterline;
+
+// Tank walls. The bounds are a parameter so the size can be tuned without touching the model.
 export type WorldBounds = { minX: number; maxX: number; minZ: number; maxZ: number };
 export const WORLD: WorldBounds = { minX: -10000, maxX: 10000, minZ: -10000, maxZ: 10000 };
 

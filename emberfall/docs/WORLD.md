@@ -5,22 +5,27 @@ The river network is in `packages/waterway`. Everything else is design only.
 
 ## 1. Geography
 
-- The world is a very large flat rectangle. Its size is a parameter (`WORLD` in `compass.ts`, currently ±10 km). The edges are the limit of the known world.
-- A very large black rock, the **lodestone**, sits at the centre (0, 0). It is the only source of magnetism.
-- Coordinates are metres. `x` runs east–west and `z` north–south, with +z as north. The compass also measures headings clockwise from +z.
+- The world is an **aquarium**: a large rectangular tank, filled with water to a waterline. Its footprint is a parameter (`WORLD` in `compass.ts`, currently ±10 km). The walls are the limit of the known world.
+- Water is the default. Almost the whole surface is navigable water, and land exists only where something breaks the surface.
+- A very large black rock, the **lodestone**, stands at the centre (0, 0) as a tall pillar pointing up from the tank floor. It is the only source of magnetism. Its height is 60 m against a waterline of 40 m (`LODESTONE`, `WATERLINE`), so the top stands clear of the water as a dark island.
+- Seen from above the pillar is a point. Navigation stays two-dimensional on the surface, and the height only decides whether the pillar is land.
+- Coordinates are metres on the surface. `x` runs east–west and `z` north–south, with +z as north. Height above the tank floor is a separate `y` axis, used only for the pillar and the waterline.
 
 ## 2. Terrain
 
 | Class | Passable by | Notes |
 | --- | --- | --- |
-| Land | Foot, cart | Hosts villages and colonies. Can be cleared and built on. |
-| Water | Craft, ships | Lakes and the sea. The main river and tributaries are water too. |
-| Mountain | Nobody | Impassable. Blocks sight lines and marks the edge of regions. |
-| Shore | Foot and craft | Landing points. Where cargo changes hands. |
+| Water | Craft, ships | The default. Depth matters: a ship needs more water than its draught. |
+| Shallows | Craft only | Near the base of the pillar and along the walls, where the floor rises. |
+| Land | Foot, cart | Only above the waterline: the top of the lodestone and any islands. Hosts villages and colonies. |
+| Shore | Foot and craft | Where land meets water. Landing points, and where cargo changes hands. |
+| Wall | Nobody | The tank edge. Impassable. |
+
+Depth is a property of the water, not a separate terrain class. A ship grounds in shallows and cannot cross them.
 
 ## 3. Hydrology
 
-- **River:** a navigable reach in the waterway graph. It has a current and a length, and it carries ships.
+- **River:** a navigable reach in the waterway graph. In the aquarium, rivers are channels of deeper water through the shallows. It has a current and a length, and it carries ships.
 - **Stream:** a small tributary reach. It can be crossed by craft in a fair current but does not carry a ship, and it feeds a river at a junction.
 - A river that is closed (flood, silt, or a broken lock) becomes a reach with `open: false` and holds its cargo (see `DOMAIN_MODEL_RIVER.md`).
 - Rivers and streams form the directed graph in `packages/waterway`. Water flows downhill from upstream to downstream.
@@ -52,6 +57,7 @@ The river network is in `packages/waterway`. Everything else is design only.
 ## 8. Open questions
 
 - The map's real size, and how much of it is mountain, land, and water.
+- Depth of the open water away from the walls, and how far the shallows reach around the pillar.
 - Whether the lodestone's deviation should also depend on the ship's own iron, so that each ship's needle differs.
 - Whether a craft can cross the open sea, or only rivers and streams.
 - Whether the compass chart is an item to craft and carry, or a skill of the navigator's profession.

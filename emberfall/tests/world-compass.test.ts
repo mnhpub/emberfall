@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { LODESTONE, WORLD, angularGap, compassReading, deviation, inBounds, trueBearing } from '../packages/world/compass.ts';
+import { LODESTONE, WATERLINE, WORLD, angularGap, breaksSurface, compassReading, deviation, inBounds, trueBearing } from '../packages/world/compass.ts';
 
 const around = (radius: number, n: number) =>
   Array.from({ length: n }, (_, i) => {
@@ -61,4 +61,10 @@ test('the world is a bounded flat rectangle', () => {
   assert.equal(inBounds({ x: WORLD.maxX, z: WORLD.minZ }), true);
   assert.equal(inBounds({ x: WORLD.maxX + 1, z: 0 }), false);
   assert.equal(inBounds({ x: 0, z: WORLD.minZ - 1 }), false);
+});
+
+test('the pillar pierces the water only when it is taller than the waterline', () => {
+  assert.equal(breaksSurface(LODESTONE, WATERLINE), LODESTONE.height > WATERLINE);
+  assert.equal(breaksSurface({ ...LODESTONE, height: WATERLINE - 1 }, WATERLINE), false, 'submerged pillar is not land');
+  assert.equal(breaksSurface({ ...LODESTONE, height: WATERLINE + 5 }, WATERLINE), true, 'tall pillar stands out of the water');
 });
