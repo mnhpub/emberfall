@@ -41,11 +41,15 @@ export function ferryTransition(s: State, c: FerryCommand): State {
   }
   if (c.type === "ferry-board") {
     if (s.mode === "ferry") return say("Already aboard the ferry.");
-    if (
-      f.speed >= 0.1 ||
-      separation(s.position, localToWorld(FERRY.boarding, f.pose)) > 4
-    )
-      return say("Approach the stopped ferry gangway from pier or skiff.");
+    if (f.speed >= 0.1)
+      return say(
+        `Endurance is under way at ${f.speed.toFixed(1)} m/s. Stop her before boarding.`,
+      );
+    const gap = separation(s.position, localToWorld(FERRY.boarding, f.pose));
+    if (gap > 4)
+      return say(
+        `Walk to the Endurance gangway to board, ${Math.round(gap)} m away. Pier or skiff alongside works.`,
+      );
     f.passenger = { local: { ...FERRY.gangway }, station: "deck" };
     s.mode = "ferry";
     s.position = localToWorld(f.passenger.local, f.pose);
@@ -77,15 +81,23 @@ export function ferryTransition(s: State, c: FerryCommand): State {
   }
   if (c.type === "ferry-helm") {
     if (s.mode !== "ferry" || !f.passenger)
-      return say("Board the ferry first.");
+      return say(
+        "You are not aboard Endurance yet. Stand at the gangway and press Board Endurance ferry, then H.",
+      );
     if (f.passenger.station === "helm") {
       f.passenger.station = "deck";
       return say(
         "Helm released. The ferry keeps moving; S brakes while at the helm.",
       );
     }
-    if (separation(f.passenger.local, FERRY.helm) > 3)
-      return say("Walk to the aft helm at local 0,35.");
+    if (separation(f.passenger.local, FERRY.helm) > 3) {
+      const metres = Math.round(separation(f.passenger.local, FERRY.helm));
+      return say(
+        f.passenger.local.z < FERRY.helm.z
+          ? `Helm is ${metres} m aft. Hold S to walk aft to the wheel, then press H.`
+          : `Helm is ${metres} m forward. Hold W to walk back to the wheel, then press H.`,
+      );
+    }
     f.passenger.local = { ...FERRY.helm };
     f.passenger.station = "helm";
     s.position = localToWorld(f.passenger.local, f.pose);

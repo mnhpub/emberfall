@@ -2,6 +2,7 @@ import FerryPanel from "./components/FerryPanel";
 import AuthorityPanel from './components/AuthorityPanel';
 import SharedRoomPanel from './components/SharedRoomPanel';
 import SharedScene from './game/SharedScene';
+import MusicToggle from './audio/MusicToggle';
 import { AuthorityClient } from '../packages/authority/client';
 import type { AuthorityMode, CustodyIntent, Frame, Intent, SharedView } from '../packages/authority/protocol';
 import { isColonyIntent, type ColonyIntent } from '../packages/colonies';
@@ -149,6 +150,12 @@ export default function App() {
     simulation.current = next;
     setState(next);
   }, []);
+  // Aboard the ferry the panel mirrors the live position about five times a second, so the helm distance stays current while walking.
+  useEffect(() => {
+    if (state.mode !== "ferry") return;
+    const live = setInterval(() => setState(simulation.current), 200);
+    return () => clearInterval(live);
+  }, [state.mode]);
   useEffect(() => {
     const tick = setInterval(() => dispatch({ type: "tick" }), 1000);
     const save = () => {
@@ -262,7 +269,10 @@ export default function App() {
           <h1>EMBERFALL</h1>
           <small>THE GOLDEN WATERSHED · CONTRIBUTION PREVIEW 0.9</small>
         </div>
-        <span>{online?(roomView?'SHARED COLONY ROOM':'PRIVATE ONLINE EXPEDITION'):'LOCAL SIMULATION'} · {storage}</span>
+        <div className="sea-header-status">
+          <span>{online?(roomView?'SHARED COLONY ROOM':'PRIVATE ONLINE EXPEDITION'):'LOCAL SIMULATION'} · {storage}</span>
+          <MusicToggle />
+        </div>
       </header>
       <aside className="sea-panel">
         <h2>
@@ -286,23 +296,23 @@ export default function App() {
           {action("Salvage wreck", { type: "recover" })}
           {action("Deliver relic", { type: "deliver" })}
           {action("Space · Defend", { type: "attack" })}
+          <button
+            onClick={() => {
+              setDockLedger(false);
+              setWorkshop(true);
+            }}
+          >
+            I · Kit, equipment & crafting
+          </button>
+          <button
+            onClick={() => {
+              setWorkshop(false);
+              setDockLedger(true);
+            }}
+          >
+            L · Dock ledger & cargo
+          </button>
         </div>
-        <button
-          onClick={() => {
-            setDockLedger(false);
-            setWorkshop(true);
-          }}
-        >
-          I · Kit, equipment & crafting
-        </button>
-        <button
-          onClick={() => {
-            setWorkshop(false);
-            setDockLedger(true);
-          }}
-        >
-          L · Dock ledger & cargo
-        </button>
         <p>
           Skiff freight {usage(state.logistics, "ship")}/24 · Contribution{" "}
           {state.logistics.reputation}
@@ -630,7 +640,7 @@ function Scene({
     const offset =
       attached && !overview
         ? localToWorld(
-            { x: attached.local.x + 15, z: attached.local.z + 28 },
+            { x: attached.local.x + 15, z: Math.max(attached.local.z + 28, FERRY.helm.z + 14) },
             s.ferry.pose,
           )
         : {
@@ -640,7 +650,13 @@ function Scene({
     const look =
       attached && !overview
         ? localToWorld(
-            { x: attached.local.x, z: attached.local.z - 3 },
+            {
+              x: attached.local.x,
+              // Look toward the helm while it is still ahead of the walker, so it stays in frame.
+              z: attached.station === "deck" && attached.local.z < FERRY.helm.z
+                ? (attached.local.z + FERRY.helm.z) / 2
+                : attached.local.z - 3,
+            },
             s.ferry.pose,
           )
         : { x: focus.x, z: focus.z - (overview ? 0 : 3) };

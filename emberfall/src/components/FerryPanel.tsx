@@ -1,5 +1,14 @@
 import type { State, Command } from "../../packages/game-core";
-import { FERRY } from "../../packages/vessels";
+import { FERRY, separation } from "../../packages/vessels";
+
+// Where the gold wheel is relative to the walker, and the key that closes the gap.
+export function helmHint(local: { x: number; z: number }) {
+  const metres = Math.round(separation(local, FERRY.helm));
+  if (metres <= 2) return "At the helm wheel. Press H to take it.";
+  return local.z < FERRY.helm.z
+    ? `Helm ${metres} m aft (gold wheel on the aft deck). Hold S to walk aft, then H.`
+    : `Helm ${metres} m forward. Hold W to walk back, then H.`;
+}
 import { usage } from "../../packages/logistics";
 export default function FerryPanel({
   state,
@@ -36,6 +45,11 @@ export default function FerryPanel({
         <p data-testid="ferry-attachment">
           {p.station === "helm" ? "At helm" : "Walking deck"} · Local{" "}
           {p.local.x.toFixed(1)}, {p.local.z.toFixed(1)}
+        </p>
+      )}
+      {p && p.station === "deck" && (
+        <p className="helm-hint">
+          {helmHint(p.local)}
         </p>
       )}
       <div className="sea-actions">

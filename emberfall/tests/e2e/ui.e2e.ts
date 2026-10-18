@@ -8,6 +8,8 @@ import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { issueSession } from "../../worker/session.ts";
+import { initialState, transition } from "../../packages/game-core/index.ts";
+import { localToWorld, FERRY } from "../../packages/vessels/index.ts";
 
 const ROOT = resolve(import.meta.dirname, "../..");
 const WEB = "http://127.0.0.1:5195";
@@ -308,6 +310,126 @@ test("isometric overview toggles on and back to perspective without errors", asy
     await isoButton.waitFor();
     await page.getByRole("button", { name: "Follow player" }).click();
     assert.equal(await page.getByRole("button", { name: "Isometric map" }).count(), 0);
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await context.close();
+  }
+});
+
+// Count oscillator starts so the test proves sound is produced, not only that a button flips.
+async function instrumentAudio(page: Page) {
+  await page.addInitScript(() => {
+    (window as any).__oscStarts = 0;
+    const start = OscillatorNode.prototype.start;
+    OscillatorNode.prototype.start = function (...args: any[]) {
+      (window as any).__oscStarts++;
+      return start.apply(this, args as any);
+    };
+  });
+}
+
+test("8-bit soundtrack waits for a gesture, plays, and mutes from the header", async () => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 960 } });
+  const page = await context.newPage();
+  page.setDefaultTimeout(15000);
+  const pageErrors: string[] = [];
+  page.on("pageerror", (e) => pageErrors.push(e.message));
+  await instrumentAudio(page);
+  try {
+    await page.goto(WEB);
+    const toggle = page.getByRole("button", { name: "♪ Music on" });
+    await toggle.waitFor();
+    assert.equal(await toggle.getAttribute("aria-pressed"), "true");
+    // Autoplay policy: nothing may sound before the player's first gesture.
+    await page.waitForTimeout(400);
+    assert.equal(await page.evaluate(() => (window as any).__oscStarts), 0);
+    await page.getByRole("button", { name: /^Shipwright/ }).click();
+    await page.waitForFunction(() => (window as any).__oscStarts > 0, undefined, { timeout: 5000 });
+    // Mute from the header: the preference persists and the button reflects it.
+    await page.getByRole("button", { name: "♪ Music on" }).click();
+    await page.getByRole("button", { name: "♪ Music off" }).waitFor();
+    assert.equal(await page.evaluate(() => localStorage.getItem("emberfall.music.enabled")), "off");
+    await page.reload();
+    await page.getByRole("button", { name: "♪ Music off" }).waitFor();
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await context.close();
+  }
+});
+
+test("failed boarding keeps its reason when the helm is pressed afterwards", async () => {
+  const { context, page, pageErrors } = await openPage();
+  try {
+    await chooseShipwright(page);
+    // Starting position is far from the gangway, so boarding must fail with a specific reason.
+    await page.getByRole("button", { name: "Board Endurance ferry" }).click();
+    await page.getByText(/Walk to the Endurance gangway to board/).waitFor();
+    await page.getByRole("button", { name: /H · Take ferry helm/ }).click();
+    await page.getByText(/You are not aboard Endurance yet/).waitFor();
+    assert.equal(await page.getByText("Board the ferry first.").count(), 0);
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await context.close();
+  }
+});
+
+// Build a save aboard the ferry with the player at a chosen point on deck, using the core so the fixture follows its rules.
+function aboardAt(local: { x: number; z: number }) {
+  let state = transition(initialState(), { type: "choose-profession", profession: "fisher" });
+  const dock = localToWorld(FERRY.boarding, state.ferry.pose);
+  state = transition({ ...state, position: { x: dock.x, z: dock.z } }, { type: "ferry-board" });
+  state.ferry.passenger = { local: { ...local }, station: "deck" };
+  state.position = localToWorld(local, state.ferry.pose);
+  return state;
+}
+
+async function openAboard(local: { x: number; z: number }) {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 960 } });
+  const page = await context.newPage();
+  page.setDefaultTimeout(15000);
+  const pageErrors: string[] = [];
+  page.on("pageerror", (e) => pageErrors.push(e.message));
+  const fixture = aboardAt(local);
+  await page.addInitScript((state) => {
+    if (!sessionStorage.getItem("__aboardFixture")) {
+      sessionStorage.setItem("__aboardFixture", "1");
+      localStorage.setItem("emberfall.maritime.v1", JSON.stringify(state));
+    }
+  }, fixture);
+  await page.goto(WEB);
+  // The 3D scene only listens for keys once its controls are wired; wait for that signal, not a timer.
+  await page.locator('canvas[data-controls-ready="true"]').waitFor();
+  return { context, page, pageErrors };
+}
+
+test("the helm wheel is shown on deck and H takes the helm from beside it", async () => {
+  const { context, page, pageErrors } = await openAboard({ x: 0, z: 34 });
+  try {
+    await page.locator(".helm-hint", { hasText: "At the helm wheel" }).waitFor();
+    await page.getByRole("button", { name: /H · Take ferry helm/ }).click();
+    await page.getByText(/At helm\. Set sails/).waitFor();
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await context.close();
+  }
+});
+
+test("holding S on deck walks the player toward the helm and the hint follows", async () => {
+  const { context, page, pageErrors } = await openAboard({ x: -9, z: 0 });
+  try {
+    const metres = async () => Number(/Helm (\d+) m/.exec((await page.locator(".helm-hint").textContent()) ?? "")?.[1]);
+    await page.locator(".helm-hint").waitFor();
+    const start = await metres();
+    assert.ok(Number.isFinite(start), "the hint reports a distance before walking");
+    await page.bringToFront();
+    await page.evaluate(() => document.body.focus());
+    await page.keyboard.down("KeyS");
+    await page.waitForTimeout(2500);
+    await page.keyboard.up("KeyS");
+    await page.waitForFunction((from) => {
+      const m = /Helm (\d+) m/.exec(document.querySelector(".helm-hint")?.textContent ?? "");
+      return m !== null && Number(m[1]) < from - 2;
+    }, start, { timeout: 15000 });
     assert.deepEqual(pageErrors, []);
   } finally {
     await context.close();

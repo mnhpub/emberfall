@@ -334,3 +334,19 @@ test("moving ferry refuses cargo handoff and stopped endpoint accepts it", () =>
   s.ferry.speed = 0;
   assert.ok(execute(r.state, env, cargoContext(s)).event);
 });
+test('failed boarding explains why, and a helm press afterwards does not hide that reason', () => {
+  let s = transition(initialState(), { type: 'choose-profession', profession: 'fisher' });
+  s = transition(s, { type: 'ferry-board' });
+  assert.match(s.message, /Walk to the Endurance gangway to board, \d+ m away/);
+  s = transition(s, { type: 'ferry-helm' });
+  assert.equal(s.mode, 'foot');
+  assert.match(s.message, /not aboard Endurance yet/);
+  assert.doesNotMatch(s.message, /Board the ferry first/);
+});
+test('boarding while the ferry is under way names the speed instead of a vague approach', () => {
+  let s = transition(initialState(), { type: 'choose-profession', profession: 'fisher' });
+  s.position = localToWorld(FERRY.boarding, s.ferry.pose);
+  s.ferry.speed = 2;
+  s = transition(s, { type: 'ferry-board' });
+  assert.match(s.message, /under way at 2\.0 m\/s/);
+});

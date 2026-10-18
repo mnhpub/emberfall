@@ -1,0 +1,66 @@
+/* UI refinements layered over styles.css: one button system, aligned action grid, music control. */
+.maritime {
+  --button: #2c4f5c;
+  --button-hover: #3a6876;
+  --button-pressed: #22414c;
+  --edge: #78908b66;
+  --accent: #f1ce79;
+}
+
+.maritime button {
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  background: var(--button);
+  color: inherit;
+  font: inherit;
+  line-height: 1.25;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.05s ease;
+}
+
+.maritime button:hover:not(:disabled) {
+  background: var(--button-hover);
+  border-color: #f1ce7966;
+}
+
+.maritime button:active:not(:disabled) {
+  background: var(--button-pressed);
+  transform: translateY(1px);
+}
+
+.maritime button[aria-pressed="true"] {
+  border-color: var(--accent);
+}
+
+/* Panel actions share one column, so utility and action buttons line up. */
+.sea-actions {
+  grid-template-columns: 1fr;
+}
+
+.sea-panel button,
+.sea-guide button {
+  width: 100%;
+}
+
+.sea-header-status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  pointer-events: auto; /* the header itself ignores the pointer so the 3D scene stays clickable */
+}
+
+.music-toggle {
+  min-height: 30px;
+  padding: 4px 10px;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .maritime button {
+    transition: none;
+  }
+}
