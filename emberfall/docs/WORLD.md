@@ -6,7 +6,7 @@ The river network is in `packages/waterway`. Everything else is design only.
 ## 1. Geography
 
 - The world is an **aquarium**: a large rectangular tank, filled with water to a waterline. Its footprint is a parameter (`WORLD` in `compass.ts`, currently ±10 km). The walls are the limit of the known world.
-- Water is the default. Almost the whole surface is navigable water, and land exists only where something breaks the surface.
+- The terrain is **stacked floods**. Each flood laid down a layer of ground, and the surface you see is the latest layer that has risen above the water. Older layers lie beneath, and the oldest is the pre-flood world. Water is the default, and land is any layer exposed above the current waterline.
 - A very large black rock, the **lodestone**, stands at the centre (0, 0) as a tall pillar pointing up from the tank floor. It is the only source of magnetism. Its height is 60 m against a waterline of 40 m (`LODESTONE`, `WATERLINE`), so the top stands clear of the water as a dark island.
 - Seen from above the pillar is a point. Navigation stays two-dimensional on the surface, and the height only decides whether the pillar is land.
 - Space is Cartesian. The origin (0, 0) is the lodestone, and the tank is centred on it. Coordinates are metres on the surface. `x` runs east–west and `z` north–south, with +z as north. Height above the tank floor is a separate `y` axis, used only for the pillar and the waterline.
@@ -17,7 +17,8 @@ The river network is in `packages/waterway`. Everything else is design only.
 | --- | --- | --- |
 | Water | Craft, ships | The default. Depth matters: a ship needs more water than its draught. |
 | Shallows | Craft only | Near the base of the pillar and along the walls, where the floor rises. |
-| Land | Foot, cart | Only above the waterline: the top of the lodestone and any islands. Hosts villages and colonies. |
+| Land | Foot, cart | Any layer exposed above the current waterline. Pre-flood ground is land that a receding flood has uncovered; it may hold ruins and relics. Hosts villages and colonies. |
+| Drowned ground | Craft, ships (carefully) | An older layer still under water. Shallow, and it may hide pre-flood ruins that can be reached by diving or salvage. |
 | Shore | Foot and craft | Where land meets water. Landing points, and where cargo changes hands. |
 | Wall | Nobody | The tank edge. Impassable. |
 
@@ -58,6 +59,9 @@ Depth is a property of the water, not a separate terrain class. A ship grounds i
 
 - The map's real size, and how much of it is mountain, land, and water.
 - Depth of the open water away from the walls, and how far the shallows reach around the pillar.
+- How many flood layers the tank holds, how far apart they are in height, and which one is the pre-flood surface.
+- Whether the waterline rises and falls within an era, or only moves between layers.
+- How Plato's pre-flood knowledge is reached: by exposing older ground, by salvage on drowned layers, or both.
 - Whether the lodestone's deviation should also depend on the ship's own iron, so that each ship's needle differs.
 - Whether a craft can cross the open sea, or only rivers and streams.
 - Whether the compass chart is an item to craft and carry, or a skill of the navigator's profession.
