@@ -6,7 +6,7 @@ import { WATERLINE, breaksSurface, LODESTONE, type Lodestone } from "./compass.t
 export type Role = "architect" | "player";
 export type FloodRecord = { id: string; tick: number; from: number; to: number; by: string };
 // Ground and structures that a rising flood drowned. They stay as wreckage for diving until they are salvaged.
-export type Wreck = { id: string; floodId: string; bottom: number; top: number; salvaged: boolean };
+export type Wreck = { id: string; floodId: string; bottom: number; top: number; salvaged: boolean; lost?: string[] };
 export type LevelState = { tick: number; waterline: number; floods: FloodRecord[]; wrecks: Wreck[] };
 
 // Floor and top of the tank, metres above the tank floor.
@@ -69,4 +69,35 @@ export function lastDirection(s: LevelState): "rising" | "receding" | null {
   const last = s.floods.at(-1);
   if (!last) return null;
   return last.to > last.from ? "rising" : "receding";
+}
+
+// Objects in the world. Only ships survive a flood: anything else whose ground the water covers is lost.
+export type ObjectKind = "ship" | "craft" | "village" | "colony" | "structure";
+export type WorldObject = { id: string; kind: ObjectKind; elevation: number };
+
+export const survivesFlood = (kind: ObjectKind) => kind === "ship";
+
+// Architect flood that also drowns objects. Non-ship objects below the new level are removed and listed on the wreck
+// record; ships stay and float at the new waterline. Lowering the level restores nothing.
+export function floodWorld(
+  s: LevelState,
+  objects: WorldObject[],
+  to: number,
+  actor: string,
+  role: Role,
+  tick: number,
+): { level: LevelState; objects: WorldObject[]; lost: WorldObject[] } {
+  const level = setWaterline(s, to, actor, role, tick);
+  const lost: WorldObject[] = [];
+  const kept: WorldObject[] = [];
+  for (const o of objects) {
+    if (survivesFlood(o.kind)) kept.push({ ...o, elevation: Math.max(o.elevation, to) });
+    else if (to > s.waterline && o.elevation < to) lost.push(o);
+    else kept.push(o);
+  }
+  if (lost.length && level.wrecks.length) {
+    const wreck = level.wrecks[level.wrecks.length - 1];
+    level.wrecks[level.wrecks.length - 1] = { ...wreck, lost: lost.map((o) => o.id) };
+  }
+  return { level, objects: kept, lost };
 }
