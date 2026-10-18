@@ -1,0 +1,71 @@
+npm run check
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> emberfall-survival@0.2.0 check
+> tsc -b && npm run check:worker
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> emberfall-survival@0.2.0 check:worker
+> tsc -p tsconfig.worker.json
+
+python3 -m py_compile pipelines/dxf_pipeline.py pipelines/local_intake.py pipelines/blender_refine.py services/asset-intake/worker.py
+npm test
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> emberfall-survival@0.2.0 test
+> node --experimental-strip-types --test tests/*.test.ts
+
+✔ finite gathering, range checks and immutable transitions (3.131701ms)
+✔ pyramid consumes granite and gold and propagates downstream (0.336212ms)
+✔ movement cannot cross banks and ignores nonfinite commands (2.923449ms)
+✔ boarding, combat cooldown, damage, repair, salvage and delivery (0.485676ms)
+✔ saves roundtrip and reject malformed values (0.848378ms)
+✔ all generated gameplay states restore (3.284088ms)
+✔ complete expedition and construction through public commands without position edits (6.813814ms)
+✔ persistent endpoints fail closed without staging credentials (5.126733ms)
+✔ requests require authentication and saves require ownership (2.615609ms)
+✔ room reads and writes share identity and other rooms are isolated (3.718097ms)
+✔ presence ownership, malformed routes and stale cleanup (2.925853ms)
+✔ invalid display names and oversized actual bodies are rejected (1.301175ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 173.970552
+python3 -m unittest discover -s tests -p '*_test.py'
+...127.0.0.1 - - [17/Oct/2026 16:52:02] "POST /asset-api/upload HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2026 16:52:02] "GET /asset-api/jobs/bb872dfce9514636a5e3ccd28803d6bc/model.glb HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2026 16:52:03] "POST /asset-api/upload HTTP/1.1" 422 -
+127.0.0.1 - - [17/Oct/2026 16:52:03] "POST /asset-api/upload HTTP/1.1" 415 -
+127.0.0.1 - - [17/Oct/2026 16:52:03] "POST /asset-api/upload HTTP/1.1" 403 -
+.
+----------------------------------------------------------------------
+Ran 4 tests in 0.536s
+
+OK
+npm run build:web
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> emberfall-survival@0.2.0 build:web
+> tsc -b && vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 51 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                     0.54 kB │ gzip:   0.33 kB
+dist/assets/index-Cw6Lvzv_.css     14.49 kB │ gzip:   4.19 kB
+dist/assets/index-PPUXYPOX.js   1,168.71 kB │ gzip: 327.11 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.35s
+python3 pipelines/dxf_pipeline.py fixtures/ship-panel.dxf --out build/assets/ship-panel
+{"schemaVersion": 1, "profile": "convex-panel-v1", "sourceSha256": "e9847d8ee63042a5baffbeb902285afc148bd70c0c1787bd7d3aba1e41798c55", "outputSha256": "ac84b06c1754c9ce261d64d30db1116c72fb658d77b463f00b91522d8eb05e98", "units": "metres", "sourceVertices": 5, "outputVertices": 10, "triangles": 16, "repairs": [], "status": "review-ready", "automaticPublication": false, "limitations": ["fixed 0.25m extrusion", "no LOD, hull lofting, curved segments or automatic decimation", "bounds only; no collision mesh exported"], "bounds": {"bufferView": 0, "componentType": 5126, "count": 10, "type": "VEC3", "min": [0.0, 0, -2.0], "max": [4.0, 0.25, -0.0]}}

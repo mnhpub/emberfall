@@ -1,0 +1,41 @@
+name = "emberfall-api"
+main = "worker/index.ts"
+compatibility_date = "2026-10-17"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+[[durable_objects.bindings]]
+name = "WORLD_ROOMS"
+class_name = "WorldRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["WorldRoom"]
+
+[[durable_objects.bindings]]
+name = "AUTHORITY_SESSIONS"
+class_name = "AuthoritySession"
+
+[[migrations]]
+tag = "v2-authority"
+new_sqlite_classes = ["AuthoritySession"]
+
+[[durable_objects.bindings]]
+name = "SHARED_WORLDS"
+class_name = "SharedWorld"
+
+[[migrations]]
+tag = "v3-shared-world"
+new_sqlite_classes = ["SharedWorld"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "emberfall-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "GAME_ASSETS"
+bucket_name = "emberfall-assets"

@@ -1,0 +1,101 @@
+npm run check
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> emberfall-survival@0.5.0 check
+> tsc -b && npm run check:worker
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> emberfall-survival@0.5.0 check:worker
+> tsc -p tsconfig.worker.json
+
+python3 -m py_compile pipelines/dxf_pipeline.py pipelines/local_intake.py pipelines/blender_refine.py services/asset-intake/worker.py
+npm test
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> emberfall-survival@0.5.0 test
+> node --experimental-strip-types --test tests/*.test.ts
+
+✔ finite gathering, range checks and immutable transitions (19.439689ms)
+✔ pyramid consumes granite and gold and propagates downstream (0.55428ms)
+✔ movement cannot cross banks and ignores nonfinite commands (0.625445ms)
+✔ boarding, combat cooldown, damage, repair, salvage and delivery (0.529864ms)
+✔ saves roundtrip and reject malformed values (2.353573ms)
+✔ all generated gameplay states restore (2.239675ms)
+✔ complete expedition and construction through public commands without position edits (2.748818ms)
+✔ deposit and partial transfer conserve cargo, identity and provenance (2.319823ms)
+✔ same command retry returns receipt before stale revision check; changed payload conflicts (0.368525ms)
+✔ invalid quantity, unavailable stock, range, capacity and self-transfer are atomic rejections (0.456015ms)
+✔ reservations cannot exceed demand; delivery consumes cargo and credits once (1.076163ms)
+✔ local state applies inventory debit and colony credit once, preserving old saves (7.342126ms)
+✔ occupied crates cannot be packed; packing an empty crate succeeds (0.747286ms)
+✔ full voyage through public commands fulfills demand, no position edits (3.767656ms)
+✔ randomized bounded partial handoffs preserve quantities and replay (12.019758ms)
+✔ bounded ledger fails closed without evicting idempotency receipts (441.270336ms)
+✔ reclaim returns unassigned supplies once and reserved supplies cannot bypass demand (1.522523ms)
+✔ component storage and reclaim conserve quantities and do not repair condition (1.237511ms)
+✔ all starting professions grant one owned equipped starter; choice cannot duplicate tools (2.033509ms)
+✔ every profession can pick up bolts; finite pile and distance enforced (2.688839ms)
+✔ failed crafting is atomic and unknown identifiers do not tick or crash (1.522473ms)
+✔ craft, place workbench, forge, operate, equip wardrobe and pack through public commands (5.938849ms)
+✔ placement respects water, overlap, reach, tool and movement collision (0.766605ms)
+✔ tool bonus consumes finite node stock and wears tool; components cannot be equipped (0.406942ms)
+✔ legacy migration preserves voyage and balances; current saves reject invalid references (1.173156ms)
+✔ economic command contract checks revisions and events replay into projections (0.584395ms)
+✔ economic events replay component consumption and equipment changes in sequence (3.38482ms)
+✔ local/world transforms round-trip across headings and translations (0.998998ms)
+✔ shuttle, board, deck movement and pier exit use persistent attachments (5.478468ms)
+✔ deck bounds taper with hull, mast collisions and cabin doorway match geometry (7.780524ms)
+✔ helm requires proximity, furled sails do not propel and passengers follow translation/yaw (6.493209ms)
+✔ unsafe exits, moving boarding and control without helm fail safely (0.852442ms)
+✔ conservative hull cannot enter narrow river or leave world; dt is bounded (0.391379ms)
+✔ legacy migration retains cargo ledger; malformed ferry attachments are rejected (2.514532ms)
+✔ skiff cargo can transfer to ferry gangway, keeping lot identity and capacity (0.978068ms)
+✔ skiff reaches offshore gangway via open sea without teleporting through land (1.862156ms)
+✔ moving ferry refuses cargo handoff and stopped endpoint accepts it (1.068582ms)
+✔ persistent endpoints fail closed without staging credentials (3.413352ms)
+✔ requests require authentication and saves require ownership (1.709369ms)
+✔ room reads and writes share identity and other rooms are isolated (8.805992ms)
+✔ presence ownership, malformed routes and stale cleanup (6.414573ms)
+✔ invalid display names and oversized actual bodies are rejected (0.873393ms)
+ℹ tests 42
+ℹ suites 0
+ℹ pass 42
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 647.225068
+python3 -m unittest discover -s tests -p '*_test.py'
+...127.0.0.1 - - [17/Oct/2026 17:14:40] "POST /asset-api/upload HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2026 17:14:40] "GET /asset-api/jobs/33fbbdceff904bcd822ba25fa02966ba/model.glb HTTP/1.1" 200 -
+127.0.0.1 - - [17/Oct/2026 17:14:40] "POST /asset-api/upload HTTP/1.1" 422 -
+127.0.0.1 - - [17/Oct/2026 17:14:40] "POST /asset-api/upload HTTP/1.1" 415 -
+127.0.0.1 - - [17/Oct/2026 17:14:40] "POST /asset-api/upload HTTP/1.1" 403 -
+.
+----------------------------------------------------------------------
+Ran 4 tests in 0.483s
+
+OK
+npm run build:web
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> emberfall-survival@0.5.0 build:web
+> tsc -b && vite build
+
+vite v7.3.7 building client environment for production...
+transforming...
+✓ 63 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                     0.54 kB │ gzip:   0.33 kB
+dist/assets/index-CICF9QUS.css     17.61 kB │ gzip:   4.87 kB
+dist/assets/index-DMcmi1hE.js   1,215.91 kB │ gzip: 342.31 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 2.47s
+python3 pipelines/dxf_pipeline.py fixtures/ship-panel.dxf --out build/assets/ship-panel
+{"schemaVersion": 1, "profile": "convex-panel-v1", "sourceSha256": "e9847d8ee63042a5baffbeb902285afc148bd70c0c1787bd7d3aba1e41798c55", "outputSha256": "ac84b06c1754c9ce261d64d30db1116c72fb658d77b463f00b91522d8eb05e98", "units": "metres", "sourceVertices": 5, "outputVertices": 10, "triangles": 16, "repairs": [], "status": "review-ready", "automaticPublication": false, "limitations": ["fixed 0.25m extrusion", "no LOD, hull lofting, curved segments or automatic decimation", "bounds only; no collision mesh exported"], "bounds": {"bufferView": 0, "componentType": 5126, "count": 10, "type": "VEC3", "min": [0.0, 0, -2.0], "max": [4.0, 0.25, -0.0]}}

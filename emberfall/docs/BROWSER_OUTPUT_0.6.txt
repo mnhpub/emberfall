@@ -1,0 +1,16 @@
+Existing gameplay browser regression:
+PYTHON=python3 npm run test:browser
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> emberfall-survival@0.6.0 test:browser
+> node --experimental-strip-types scripts/browser-smoke.ts
+
+Browser smoke passed: profession, crafting/equipping, DXF preview, cargo handling/quota rollback, ferry walking/helm/coasting/reload; no page errors.
+
+Real local authority/SQLite browser integration:
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> emberfall-survival@0.6.0 test:authority
+> node --experimental-strip-types scripts/authority-smoke.ts
+
+PASS: real local Worker authentication, private online UI, lost economic acknowledgement, retry without duplication, isolated local save, SQLite recovery after runtime restart and reconnect.

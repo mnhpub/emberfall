@@ -1,0 +1,13 @@
+name = "emberfall-asset-intake-staging"
+main = "worker.py"
+compatibility_date = "2026-10-17"
+compatibility_flags = ["python_workers"]
+workers_dev = false
+[[r2_buckets]]
+binding = "SOURCES"
+bucket_name = "emberfall-quarantine-staging"
+[[queues.producers]]
+binding = "ASSET_JOBS"
+queue = "emberfall-assets-staging"
+# INTAKE_TOKEN is a secret, never a checked-in variable.
+# Requires pywrangler environment and cloud-runtime validation before deployment.

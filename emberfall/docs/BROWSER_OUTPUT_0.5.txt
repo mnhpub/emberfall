@@ -1,0 +1,6 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> emberfall-survival@0.5.0 test:browser
+> node --experimental-strip-types scripts/browser-smoke.ts
+
+Browser smoke passed: profession, crafting/equipping, DXF preview, cargo handling/quota rollback, ferry walking/helm/coasting/reload; no page errors.

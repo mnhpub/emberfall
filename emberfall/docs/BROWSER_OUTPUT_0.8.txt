@@ -1,0 +1,28 @@
+Gameplay regression:
+PYTHON=python3 npm run test:browser
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> emberfall-survival@0.8.0 test:browser
+> node --experimental-strip-types scripts/browser-smoke.ts
+
+Browser smoke passed: profession, crafting/equipping, DXF preview, cargo handling/quota rollback, ferry walking/helm/coasting/reload; no page errors.
+
+Private/shared authority regression:
+npm run test:authority
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> emberfall-survival@0.8.0 test:authority
+> node --experimental-strip-types scripts/authority-smoke.ts
+
+PASS: real local Worker authentication, private online UI, lost economic acknowledgement, retry without duplication, isolated local save, SQLite recovery after runtime restart and reconnect.
+PASS: two shared-room browser clients, common resource depletion, isolated inventories, recipient consent, dropped handoff acknowledgement without duplication, atomic custody persistence across workerd restart and two-player reconnect.
+PASS: two authenticated crew walk using keyboard input, compete for one helm, sail the same ferry, release disconnected control by lease expiry, transfer helm ownership and reconnect aboard the moving reference frame.
+
+Colony production/contract voyage:
+npm run test:colonies
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> emberfall-survival@0.8.0 test:colonies
+> node --experimental-strip-types scripts/colony-smoke.ts
+
+PASS: actual browser gathering and two-way ship voyage, both one-time colony contracts, NPC stock release, production focus, unlocked finite forestry, lost stock-release acknowledgement without duplication, and workerd/SQLite restart recovery.
