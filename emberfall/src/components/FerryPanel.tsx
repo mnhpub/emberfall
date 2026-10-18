@@ -6,12 +6,16 @@ export default function FerryPanel({
   dispatch,
   overview,
   toggleOverview,
+  isometric,
+  toggleIsometric,
   sharedFreight,
 }: {
   state: State;
   dispatch: (c: Command) => void;
   overview: boolean;
   toggleOverview: () => void;
+  isometric: boolean;
+  toggleIsometric: () => void;
   sharedFreight?:number;
 }) {
   const f = state.ferry,
@@ -53,6 +57,11 @@ export default function FerryPanel({
         <button onClick={toggleOverview}>
           {overview ? "Follow player" : "Vessel overview"}
         </button>
+        {overview && (
+          <button onClick={toggleIsometric} aria-pressed={isometric}>
+            {isometric ? "Perspective view" : "Isometric map"}
+          </button>
+        )}
       </div>
       <p>
         On deck: WASD walks relative to vessel.

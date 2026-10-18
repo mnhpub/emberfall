@@ -292,3 +292,24 @@ test("phone-width layout has no horizontal page scroll", async () => {
     await context.close();
   }
 });
+
+test("isometric overview toggles on and back to perspective without errors", async () => {
+  const { context, page, pageErrors } = await openPage();
+  try {
+    await chooseShipwright(page);
+    const isoButton = page.getByRole("button", { name: "Isometric map" });
+    assert.equal(await isoButton.count(), 0, "isometric control is only offered in the vessel overview");
+    await page.getByRole("button", { name: "Vessel overview" }).click();
+    await isoButton.click();
+    await page.getByRole("button", { name: "Perspective view" }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "Perspective view" }).getAttribute("aria-pressed"), "true");
+    await page.waitForTimeout(1500);
+    await page.getByRole("button", { name: "Perspective view" }).click();
+    await isoButton.waitFor();
+    await page.getByRole("button", { name: "Follow player" }).click();
+    assert.equal(await page.getByRole("button", { name: "Isometric map" }).count(), 0);
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await context.close();
+  }
+});
