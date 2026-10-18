@@ -24,6 +24,14 @@ The river network is in `packages/waterway`. Everything else is design only.
 
 Depth is a property of the water, not a separate terrain class. A ship grounds in shallows and cannot cross them.
 
+### Floods and the waterline
+
+- The waterline is state, not a constant. Only the **architect** can raise or lower it.
+- Each change is a recorded flood layer: from which level, to which, when, and by whom. Floods stack in order.
+- Raising the waterline submerges land and can drown the pillar; lowering it exposes older ground again.
+- The architect's authority is a role check in the command, not a player choice. Players can only act on the world at the level it is set.
+- Model: `packages/world/flood.ts` (`setWaterline`, `isLandAt`, `pillarAboveWater`). Levels run from 0 to 120 m.
+
 ## 3. Hydrology
 
 - **River:** a navigable reach in the waterway graph. In the aquarium, rivers are channels of deeper water through the shallows. It has a current and a length, and it carries ships.
@@ -61,6 +69,8 @@ Depth is a property of the water, not a separate terrain class. A ship grounds i
 - Depth of the open water away from the walls, and how far the shallows reach around the pillar.
 - How many flood layers the tank holds, how far apart they are in height, and which one is the pre-flood surface.
 - Whether the waterline rises and falls within an era, or only moves between layers.
+- Who the architect is in the fiction and in play: a designer tool, an in-world role, or a player class with its own authority.
+- Whether a flood can be undone without losing the colonies it drowned.
 - How Plato's pre-flood knowledge is reached: by exposing older ground, by salvage on drowned layers, or both.
 - Whether the lodestone's deviation should also depend on the ship's own iron, so that each ship's needle differs.
 - Whether a craft can cross the open sea, or only rivers and streams.
