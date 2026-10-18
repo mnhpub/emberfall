@@ -9,7 +9,7 @@ The river network is in `packages/waterway`. Everything else is design only.
 - Water is the default. Almost the whole surface is navigable water, and land exists only where something breaks the surface.
 - A very large black rock, the **lodestone**, stands at the centre (0, 0) as a tall pillar pointing up from the tank floor. It is the only source of magnetism. Its height is 60 m against a waterline of 40 m (`LODESTONE`, `WATERLINE`), so the top stands clear of the water as a dark island.
 - Seen from above the pillar is a point. Navigation stays two-dimensional on the surface, and the height only decides whether the pillar is land.
-- Coordinates are metres on the surface. `x` runs east–west and `z` north–south, with +z as north. Height above the tank floor is a separate `y` axis, used only for the pillar and the waterline.
+- Space is Cartesian. The origin (0, 0) is the lodestone, and the tank is centred on it. Coordinates are metres on the surface. `x` runs east–west and `z` north–south, with +z as north. Height above the tank floor is a separate `y` axis, used only for the pillar and the waterline.
 
 ## 2. Terrain
 
