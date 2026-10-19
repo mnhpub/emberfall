@@ -1,3 +1,4 @@
+import { boardBlocker, helmBlocker } from '../packages/game-core/ferry.ts';
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -333,4 +334,34 @@ test("moving ferry refuses cargo handoff and stopped endpoint accepts it", () =>
   assert.match(execute(r.state, env, ctx).error!, /Stop/);
   s.ferry.speed = 0;
   assert.ok(execute(r.state, env, cargoContext(s)).event);
+});
+test('failed boarding explains why, and a helm press afterwards does not hide that reason', () => {
+  let s = transition(initialState(), { type: 'choose-profession', profession: 'fisher' });
+  s = transition(s, { type: 'ferry-board' });
+  assert.match(s.message, /Walk to the Endurance gangway to board, \d+ m away/);
+  s = transition(s, { type: 'ferry-helm' });
+  assert.equal(s.mode, 'foot');
+  assert.match(s.message, /not aboard Endurance yet/);
+  assert.doesNotMatch(s.message, /Board the ferry first/);
+});
+test('boarding while the ferry is under way names the speed instead of a vague approach', () => {
+  let s = transition(initialState(), { type: 'choose-profession', profession: 'fisher' });
+  s.position = localToWorld(FERRY.boarding, s.ferry.pose);
+  s.ferry.speed = 2;
+  s = transition(s, { type: 'ferry-board' });
+  assert.match(s.message, /under way at 2\.0 m\/s/);
+});
+
+test('boarding and helm blockers name the reason, and clear once the action is possible', () => {
+  let s = transition(initialState(), { type: 'choose-profession', profession: 'fisher' });
+  assert.match(boardBlocker(s)!, /Walk to the Endurance gangway/);
+  assert.match(helmBlocker(s)!, /not aboard Endurance yet/);
+  const dock = localToWorld(FERRY.boarding, s.ferry.pose);
+  s = { ...s, position: { x: dock.x, z: dock.z } };
+  assert.equal(boardBlocker(s), null);
+  s = transition(s, { type: 'ferry-board' });
+  assert.match(boardBlocker(s)!, /Already aboard/);
+  assert.match(helmBlocker(s)!, /^Helm is \d+ m aft/);
+  s = { ...s, ferry: { ...s.ferry, passenger: { local: { x: 0, z: 34 }, station: 'deck' as const } } };
+  assert.equal(helmBlocker(s), null, 'within reach of the wheel the helm can be taken');
 });

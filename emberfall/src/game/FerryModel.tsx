@@ -182,7 +182,24 @@ export default function FerryModel({
             </mesh>
           ),
         )}
+        <HelmMarker />
       </group>
     </>
+  );
+}
+
+// The aft helm: a post and a gold wheel, so the place to press H is visible from the deck.
+function HelmMarker() {
+  return (
+    <group position={[FERRY.helm.x, 0, FERRY.helm.z]}>
+      <mesh position={[0, 0.7, 0]} castShadow>
+        <cylinderGeometry args={[0.12, 0.16, 1.4, 8]} />
+        <meshStandardMaterial color="#5a4632" />
+      </mesh>
+      <mesh position={[0, 1.5, 0]} rotation={[Math.PI / 2, 0, 0]} castShadow>
+        <torusGeometry args={[0.7, 0.09, 8, 20]} />
+        <meshStandardMaterial color="#e0b44e" emissive="#8a5f12" emissiveIntensity={0.4} />
+      </mesh>
+    </group>
   );
 }

@@ -2,6 +2,7 @@ import FerryPanel from "./components/FerryPanel";
 import AuthorityPanel from './components/AuthorityPanel';
 import SharedRoomPanel from './components/SharedRoomPanel';
 import SharedScene from './game/SharedScene';
+import MusicToggle from './audio/MusicToggle';
 import { AuthorityClient } from '../packages/authority/client';
 import type { AuthorityMode, CustodyIntent, Frame, Intent, SharedView } from '../packages/authority/protocol';
 import { isColonyIntent, type ColonyIntent } from '../packages/colonies';
@@ -9,6 +10,7 @@ import FerryModel from "./game/FerryModel";
 import { FERRY, localToWorld } from "../packages/vessels";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
+import { OrthographicCamera } from "@react-three/drei";
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import {
@@ -46,6 +48,12 @@ export default function App() {
   const [state, setState] = useState<State>(load);
   const simulation = useRef<State>(state);
   const [storage, setStorage] = useState("Local save ready");
+  // Recent game messages, so a newer message never hides the reason for an earlier one.
+  const [log, setLog] = useState<string[]>([]);
+  useEffect(() => {
+    if (!state.message) return;
+    setLog((prev) => (prev.at(-1) === state.message ? prev : [...prev, state.message].slice(-8)));
+  }, [state.message]);
   const authority = useRef<AuthorityClient | null>(null);
   const queuedAction = useRef<Intent | null>(null);
   const localBackup = useRef<State | null>(null);
@@ -78,6 +86,8 @@ export default function App() {
   const [dockLedger, setDockLedger] = useState(false);
   const [placing, setPlacing] = useState<string | null>(null);
   const [overview, setOverview] = useState(false);
+  // Isometric applies only inside the vessel overview; the follow camera stays perspective.
+  const [isometric, setIsometric] = useState(false);
   const [asset, setAsset] = useState<string>();
   const [report, setReport] = useState<{
     triangles: number;
@@ -146,6 +156,12 @@ export default function App() {
     simulation.current = next;
     setState(next);
   }, []);
+  // Aboard the ferry the panel mirrors the live position about five times a second, so the helm distance stays current while walking.
+  useEffect(() => {
+    if (state.mode !== "ferry") return;
+    const live = setInterval(() => setState(simulation.current), 200);
+    return () => clearInterval(live);
+  }, [state.mode]);
   useEffect(() => {
     const tick = setInterval(() => dispatch({ type: "tick" }), 1000);
     const save = () => {
@@ -232,6 +248,7 @@ export default function App() {
           dispatch={dispatch}
           blocked={!state.profession || workshop || dockLedger}
           overview={overview}
+          isometric={isometric}
           authorityFrame={authorityFrame}
           shared={roomView}
           place={
@@ -258,7 +275,10 @@ export default function App() {
           <h1>EMBERFALL</h1>
           <small>THE GOLDEN WATERSHED · CONTRIBUTION PREVIEW 0.9</small>
         </div>
-        <span>{online?(roomView?'SHARED COLONY ROOM':'PRIVATE ONLINE EXPEDITION'):'LOCAL SIMULATION'} · {storage}</span>
+        <div className="sea-header-status">
+          <span>{online?(roomView?'SHARED COLONY ROOM':'PRIVATE ONLINE EXPEDITION'):'LOCAL SIMULATION'} · {storage}</span>
+          <MusicToggle />
+        </div>
       </header>
       <aside className="sea-panel">
         <h2>
@@ -282,23 +302,23 @@ export default function App() {
           {action("Salvage wreck", { type: "recover" })}
           {action("Deliver relic", { type: "deliver" })}
           {action("Space · Defend", { type: "attack" })}
+          <button
+            onClick={() => {
+              setDockLedger(false);
+              setWorkshop(true);
+            }}
+          >
+            I · Kit, equipment & crafting
+          </button>
+          <button
+            onClick={() => {
+              setWorkshop(false);
+              setDockLedger(true);
+            }}
+          >
+            L · Dock ledger & cargo
+          </button>
         </div>
-        <button
-          onClick={() => {
-            setDockLedger(false);
-            setWorkshop(true);
-          }}
-        >
-          I · Kit, equipment & crafting
-        </button>
-        <button
-          onClick={() => {
-            setWorkshop(false);
-            setDockLedger(true);
-          }}
-        >
-          L · Dock ledger & cargo
-        </button>
         <p>
           Skiff freight {usage(state.logistics, "ship")}/24 · Contribution{" "}
           {state.logistics.reputation}
@@ -342,6 +362,8 @@ export default function App() {
           dispatch={dispatch}
           overview={overview}
           toggleOverview={() => setOverview((v) => !v)}
+          isometric={isometric}
+          toggleIsometric={() => setIsometric((v) => !v)}
         />
         <h3>DXF inspection</h3>
         <input
@@ -443,6 +465,15 @@ export default function App() {
           }
         />
       )}
+      <ol className="message-history" aria-label="Earlier messages">
+        {log
+          .filter((m) => m !== state.message)
+          .slice(-3)
+          .reverse()
+          .map((m, i) => (
+            <li key={i}>{m}</li>
+          ))}
+      </ol>
       <footer className="sea-message" role="status">
         {state.message}
       </footer>
@@ -483,12 +514,31 @@ function Pyramid({
     </group>
   );
 }
+// Classic isometric: pitch atan(1/sqrt2) ≈ 35.26°, yaw 45°. Equal x, y, z offsets give that angle.
+const ISO_OFFSET = 200 / Math.sqrt(3);
+const ISO_VIEW_HEIGHT = 180; // world units visible from top to bottom of the canvas (the ferry is 160 m)
+
+// Per-frame logic in Scene moves this camera over the vessel; mounting only sets the frustum.
+function IsoCamera() {
+  const height = useThree((s) => s.size.height);
+  return (
+    <OrthographicCamera
+      makeDefault
+      position={[ISO_OFFSET, ISO_OFFSET, ISO_OFFSET]}
+      zoom={height / ISO_VIEW_HEIGHT}
+      near={0.1}
+      far={1000}
+    />
+  );
+}
+
 function Scene({
   simulation,
   dispatch,
   blocked,
   place,
   overview,
+  isometric,
   authorityFrame,
   shared,
 }: {
@@ -496,6 +546,7 @@ function Scene({
   dispatch: (c: Command) => void;
   blocked: boolean;
   overview: boolean;
+  isometric: boolean;
   authorityFrame: (intent:Frame)=>boolean;
   shared:RoomView|null;
   place?: (x: number, z: number) => void;
@@ -600,26 +651,37 @@ function Scene({
     }
     const focus = overview ? s.ferry.pose : s.position;
     const attached = s.mode === "ferry" ? s.ferry.passenger : null;
+    const iso = overview && isometric;
     const offset =
       attached && !overview
         ? localToWorld(
-            { x: attached.local.x + 15, z: attached.local.z + 28 },
+            { x: attached.local.x + 15, z: Math.max(attached.local.z + 28, FERRY.helm.z + 14) },
             s.ferry.pose,
           )
         : {
-            x: focus.x + (overview ? 130 : 0),
-            z: focus.z + (overview ? 150 : 20),
+            x: focus.x + (iso ? ISO_OFFSET : overview ? 130 : 0),
+            z: focus.z + (iso ? ISO_OFFSET : overview ? 150 : 20),
           };
     const look =
       attached && !overview
         ? localToWorld(
-            { x: attached.local.x, z: attached.local.z - 3 },
+            {
+              x: attached.local.x,
+              // Look toward the helm while it is still ahead of the walker, so it stays in frame.
+              z: attached.station === "deck" && attached.local.z < FERRY.helm.z
+                ? (attached.local.z + FERRY.helm.z) / 2
+                : attached.local.z - 3,
+            },
             s.ferry.pose,
           )
         : { x: focus.x, z: focus.z - (overview ? 0 : 3) };
-    target.current.set(offset.x, overview ? 125 : attached ? 24 : 19, offset.z);
+    target.current.set(
+      offset.x,
+      iso ? ISO_OFFSET : overview ? 125 : attached ? 24 : 19,
+      offset.z,
+    );
     camera.position.lerp(target.current, 1 - Math.exp(-dt * 3));
-    camera.lookAt(look.x, overview ? 12 : attached ? 6 : 0, look.z);
+    camera.lookAt(look.x, iso ? 0 : overview ? 12 : attached ? 6 : 0, look.z);
     elapsed.current += dt;
     if (elapsed.current > 0.2) {
       elapsed.current = 0;
@@ -628,8 +690,9 @@ function Scene({
   });
   return (
     <>
+      {overview && isometric && <IsoCamera />}
       <color attach="background" args={["#142d3c"]} />
-      <fog attach="fog" args={["#142d3c", 140, 700]} />
+      {!(overview && isometric) && <fog attach="fog" args={["#142d3c", 140, 700]} />}
       <ambientLight intensity={1.3} />
       <directionalLight position={[12, 25, 8]} intensity={2} castShadow />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>

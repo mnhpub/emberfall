@@ -21,6 +21,32 @@ export type FerryCommand =
         | "ferry-sails";
     }
   | { type: "ferry-step"; dt: number; throttle: number; turn: number };
+// Why boarding is impossible right now, or null when it is possible. The transition and the UI both use this, so the
+// button, its reason and the command's message can never disagree.
+export function boardBlocker(s: State): string | null {
+  const f = s.ferry;
+  if (s.mode === "ferry") return "Already aboard the ferry.";
+  if (f.speed >= 0.1)
+    return `Endurance is under way at ${f.speed.toFixed(1)} m/s. Stop her before boarding.`;
+  const gap = separation(s.position, localToWorld(FERRY.boarding, f.pose));
+  if (gap > 4)
+    return `Walk to the Endurance gangway to board, ${Math.round(gap)} m away. Pier or skiff alongside works.`;
+  return null;
+}
+
+// Why taking the helm is impossible right now, or null. Releasing the helm is always allowed.
+export function helmBlocker(s: State): string | null {
+  const f = s.ferry;
+  if (s.mode !== "ferry" || !f.passenger)
+    return "You are not aboard Endurance yet. Stand at the gangway and press Board Endurance ferry, then H.";
+  if (f.passenger.station === "helm") return null;
+  const metres = Math.round(separation(f.passenger.local, FERRY.helm));
+  if (metres <= 3) return null;
+  return f.passenger.local.z < FERRY.helm.z
+    ? `Helm is ${metres} m aft. Hold S to walk aft to the wheel, then press H.`
+    : `Helm is ${metres} m forward. Hold W to walk back to the wheel, then press H.`;
+}
+
 export function ferryTransition(s: State, c: FerryCommand): State {
   const say = (message: string) => {
     s.message = message;
@@ -40,12 +66,8 @@ export function ferryTransition(s: State, c: FerryCommand): State {
     );
   }
   if (c.type === "ferry-board") {
-    if (s.mode === "ferry") return say("Already aboard the ferry.");
-    if (
-      f.speed >= 0.1 ||
-      separation(s.position, localToWorld(FERRY.boarding, f.pose)) > 4
-    )
-      return say("Approach the stopped ferry gangway from pier or skiff.");
+    const why = boardBlocker(s);
+    if (why) return say(why);
     f.passenger = { local: { ...FERRY.gangway }, station: "deck" };
     s.mode = "ferry";
     s.position = localToWorld(f.passenger.local, f.pose);
@@ -76,16 +98,14 @@ export function ferryTransition(s: State, c: FerryCommand): State {
     return say("Disembarked safely.");
   }
   if (c.type === "ferry-helm") {
-    if (s.mode !== "ferry" || !f.passenger)
-      return say("Board the ferry first.");
-    if (f.passenger.station === "helm") {
+    if (s.mode === "ferry" && f.passenger?.station === "helm") {
       f.passenger.station = "deck";
       return say(
         "Helm released. The ferry keeps moving; S brakes while at the helm.",
       );
     }
-    if (separation(f.passenger.local, FERRY.helm) > 3)
-      return say("Walk to the aft helm at local 0,35.");
+    const why = helmBlocker(s);
+    if (why || !f.passenger) return say(why ?? "You are not aboard Endurance yet.");
     f.passenger.local = { ...FERRY.helm };
     f.passenger.station = "helm";
     s.position = localToWorld(f.passenger.local, f.pose);

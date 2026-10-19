@@ -1,21 +1,39 @@
 import type { State, Command } from "../../packages/game-core";
-import { FERRY } from "../../packages/vessels";
+import { FERRY, separation } from "../../packages/vessels";
+import { boardBlocker, helmBlocker } from "../../packages/game-core/ferry";
+
+// Where the gold wheel is relative to the walker, and the key that closes the gap.
+export function helmHint(local: { x: number; z: number }) {
+  const metres = Math.round(separation(local, FERRY.helm));
+  if (metres <= 2) return "At the helm wheel. Press H to take it.";
+  return local.z < FERRY.helm.z
+    ? `Helm ${metres} m aft (gold wheel on the aft deck). Hold S to walk aft, then H.`
+    : `Helm ${metres} m forward. Hold W to walk back, then H.`;
+}
 import { usage } from "../../packages/logistics";
 export default function FerryPanel({
   state,
   dispatch,
   overview,
   toggleOverview,
+  isometric,
+  toggleIsometric,
   sharedFreight,
 }: {
   state: State;
   dispatch: (c: Command) => void;
   overview: boolean;
   toggleOverview: () => void;
+  isometric: boolean;
+  toggleIsometric: () => void;
   sharedFreight?:number;
 }) {
   const f = state.ferry,
     p = f.passenger;
+  const boardWhy = boardBlocker(state);
+  const helmWhy = helmBlocker(state);
+  // One reason on screen: what is blocking the thing the player is most likely to do next.
+  const reason = state.mode === "ferry" ? helmWhy : boardWhy;
   return (
     <section className="ferry-controls">
       <h3>Endurance ferry</h3>
@@ -34,17 +52,31 @@ export default function FerryPanel({
           {p.local.x.toFixed(1)}, {p.local.z.toFixed(1)}
         </p>
       )}
+      {p && p.station === "deck" && (
+        <p className="helm-hint">
+          {helmHint(p.local)}
+        </p>
+      )}
+      {reason && <p className="ferry-blocker">{reason}</p>}
       <div className="sea-actions">
         <button onClick={() => dispatch({ type: "ferry-shuttle" })}>
           Shuttle: Haven ↔ ferry pier
         </button>
-        <button onClick={() => dispatch({ type: "ferry-board" })}>
+        <button
+          onClick={() => dispatch({ type: "ferry-board" })}
+          disabled={!!boardWhy}
+          title={boardWhy ?? undefined}
+        >
           Board Endurance ferry
         </button>
         <button onClick={() => dispatch({ type: "ferry-exit" })}>
           Exit ferry at gangway
         </button>
-        <button onClick={() => dispatch({ type: "ferry-helm" })}>
+        <button
+          onClick={() => dispatch({ type: "ferry-helm" })}
+          disabled={!!helmWhy}
+          title={helmWhy ?? undefined}
+        >
           H · {p?.station === "helm" ? "Release" : "Take"} ferry helm
         </button>
         <button onClick={() => dispatch({ type: "ferry-sails" })}>
@@ -53,6 +85,11 @@ export default function FerryPanel({
         <button onClick={toggleOverview}>
           {overview ? "Follow player" : "Vessel overview"}
         </button>
+        {overview && (
+          <button onClick={toggleIsometric} aria-pressed={isometric}>
+            {isometric ? "Perspective view" : "Isometric map"}
+          </button>
+        )}
       </div>
       <p>
         On deck: WASD walks relative to vessel.
