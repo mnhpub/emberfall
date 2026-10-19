@@ -46,10 +46,20 @@ class_name = "SharedWorld"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["WorldRoom", "AuthoritySession", "SharedWorld"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "emberfall-api-test"
+database_id = "00000000-0000-0000-0000-00000000d1d1"
+migrations_dir = "${ROOT}/migrations"
 EOF
 printf 'SESSION_TOKEN="%s"\nPLAYER_ID="%s"\nAUTHORITY_SIGNING_KEY="%s"\n' \
   "${STAGING_TOKEN}" "${PLAYER}" "${SIGNING_KEY}" > "${WORK}/.dev.vars"
 chmod 600 "${WORK}/.dev.vars"
+
+# Local D1 with the project migrations, so account routes run against a real SQLite database.
+(cd "${ROOT}" && WRANGLER_SEND_METRICS=false npx wrangler d1 migrations apply DB --local --config "${WORK}/wrangler.toml" --persist-to "${WORK}/state" >"${WORK}/migrate.log" 2>&1) \
+  || { cat "${WORK}/migrate.log"; echo "Migrations failed"; exit 1; }
 
 # Own process group so cleanup also stops workerd.
 set -m
@@ -189,6 +199,35 @@ expect_status "second player gets their own session" 200
 expect_json "second player's session is independent" '.actor == "player_002" and .sequence == 0 and .state.profession != "fisher"'
 call -H "authorization: Bearer ${TOKEN}" "${BASE}/api/authority/haven/snapshot"
 expect_json "first player's committed state is durable across reads" '.sequence == 1 and .state.profession == "fisher"'
+
+echo "Accounts (D1)"
+ACCOUNT_BODY='{"email":"Crew.Member@Example.com","password":"correct horse battery","displayName":"crew_member"}'
+call -X POST -H 'content-type: application/json' -d '{"email":"x@y.io"}' "${BASE}/api/account/register"
+expect_status "registration without a password is refused" 400
+call -X POST -H 'content-type: application/json' -d "${ACCOUNT_BODY}" "${BASE}/api/account/register"
+expect_status "registration creates an account" 201
+expect_json "registration normalises the email and returns a session" '.account.email == "crew.member@example.com" and (.token | length > 40) and (.account | has("passwordHash") | not)'
+ACCOUNT_TOKEN="$(jq -r '.token' "${WORK}/body")"
+ACCOUNT_ID="$(jq -r '.account.id' "${WORK}/body")"
+call -X POST -H 'content-type: application/json' -d "${ACCOUNT_BODY}" "${BASE}/api/account/register"
+expect_status "a second registration with the same email is refused" 400
+expect_json "duplicate email gets a clear error" '.error == "An account already uses that email."'
+call -X POST -H 'content-type: application/json' -d '{"email":"crew.member@example.com","password":"correct horse battery"}' "${BASE}/api/account/signin"
+expect_status "sign-in with the right password succeeds" 200
+expect_json "sign-in returns the account id" ".accountId == \"${ACCOUNT_ID}\""
+call -X POST -H 'content-type: application/json' -d '{"email":"crew.member@example.com","password":"wrong password here"}' "${BASE}/api/account/signin"
+expect_status "sign-in with a wrong password is refused" 401
+call -X POST -H 'content-type: application/json' -d '{"email":"nobody@example.com","password":"correct horse battery"}' "${BASE}/api/account/signin"
+expect_status "sign-in for an unknown email is refused the same way" 401
+call -H "authorization: Bearer ${ACCOUNT_TOKEN}" "${BASE}/api/account/me"
+expect_status "the account session identifies its owner" 200
+expect_json "the session belongs to the registered account" ".accountId == \"${ACCOUNT_ID}\""
+call -H "authorization: Bearer ${TOKEN}" "${BASE}/api/account/me"
+expect_status "a game session cannot be used as an account session" 401
+call "${BASE}/api/account/me"
+expect_status "account check without a token is refused" 401
+call -X POST -H 'content-type: application/json' -d "{\"email\":\"a@b.io\",\"password\":\"$(head -c 5000 /dev/zero | tr '\0' 'p')\"}" "${BASE}/api/account/register"
+expect_status "oversized account request is refused" 400
 
 echo
 echo "API: ${PASS} passed, ${FAIL} failed"
