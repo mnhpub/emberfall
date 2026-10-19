@@ -33,9 +33,12 @@ test('the needle shifts as the ship moves around the rock, and the shift is the 
   const ring = around(500, 16);
   const readings = ring.map((p) => compassReading(p)!);
   const distinct = new Set(readings.map((h) => h.toFixed(6)));
-  assert.ok(distinct.size > 8, 'readings should vary around the rock');
+  // The reversal on the far side makes opposite points read alike, so the ring shows 8 distinct values of 16.
+  assert.ok(distinct.size >= 8, 'readings should vary around the rock');
   for (const p of ring) {
-    const gap = angularGap(compassReading(p)!, trueBearing(p)!);
+    // Take out the far-side half turn, leaving only the deviation to compare.
+    const without = compassReading(p)! - (reversed(p) ? Math.PI : 0);
+    const gap = angularGap(((without % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI), trueBearing(p)!);
     assert.ok(Math.abs(gap - Math.abs(deviation(p))) < 1e-9, 'the gap from true is the local deviation');
   }
 });
@@ -67,4 +70,16 @@ test('the pillar pierces the water only when it is taller than the waterline', (
   assert.equal(breaksSurface(LODESTONE, WATERLINE), LODESTONE.height > WATERLINE);
   assert.equal(breaksSurface({ ...LODESTONE, height: WATERLINE - 1 }, WATERLINE), false, 'submerged pillar is not land');
   assert.equal(breaksSurface({ ...LODESTONE, height: WATERLINE + 5 }, WATERLINE), true, 'tall pillar stands out of the water');
+});
+
+import { reversed, sextantBearing } from '../packages/world/compass.ts';
+
+test('beyond the rock on the far side the compass reverses by a half turn, but the sextant stays true', () => {
+  const nearHaven = { x: -100, z: 200 };
+  const farSide = { x: 900, z: -1200 };
+  assert.equal(reversed(nearHaven), false);
+  assert.equal(reversed(farSide), true);
+  const gapOnFar = angularGap(compassReading(farSide)!, trueBearing(farSide)!);
+  assert.ok(Math.abs(gapOnFar - Math.PI) < 1.0, 'the reading is roughly a half turn from true');
+  assert.ok(angularGap(sextantBearing(farSide)!, trueBearing(farSide)!) < 1e-12, 'the sextant is always true');
 });

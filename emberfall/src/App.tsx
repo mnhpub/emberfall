@@ -10,7 +10,8 @@ import FerryModel from "./game/FerryModel";
 import { FERRY, localToWorld } from "../packages/vessels";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
-import { OrthographicCamera } from "@react-three/drei";
+import { Line, OrthographicCamera } from "@react-three/drei";
+import { ANVIL, starPosition, visibleStars } from "../packages/world/sky";
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import {
@@ -540,16 +541,52 @@ const ISO_VIEW_HEIGHT = Math.ceil(
   ) * 1.3,
 ); // world units visible from top to bottom of the canvas
 
+// The Anvil, projected onto a sky dome above the water. Stars ignore fog so they stay bright at the horizon.
+function Constellation() {
+  const radius = 900;
+  const stars = visibleStars();
+  const at = (name: string) => {
+    const p = starPosition(stars.find((s) => s.name === name)!, radius);
+    return [p.x, p.y, p.z] as [number, number, number];
+  };
+  return (
+    <group>
+      {stars.map((star) => {
+        const [x, y, z] = at(star.name);
+        return (
+          <mesh key={star.name} position={[x, y, z]}>
+            <sphereGeometry args={[star.magnitude * 1.5, 8, 8]} />
+            <meshBasicMaterial color="#fff6d0" fog={false} />
+          </mesh>
+        );
+      })}
+      {ANVIL.links.map(([a, b]) => (
+        <Line
+          key={`${a}-${b}`}
+          points={[at(ANVIL.stars[a].name), at(ANVIL.stars[b].name)]}
+          color="#9fc4d6"
+          lineWidth={1}
+          transparent
+          opacity={0.6}
+          fog={false}
+        />
+      ))}
+    </group>
+  );
+}
+
 // The lodestone pillar at the origin and the planned Greek colony marker.
-function WorldMarkers() {
+// On the world map the markers are scaled up to read at world scale. On the ground they keep their local size: the
+// origin is only about 16 m from Ember Haven, so a full-size pillar would fill the view.
+function WorldMarkers({ scale }: { scale: number }) {
   return (
     <>
-      <mesh position={[0, 40, 0]} castShadow>
-        <cylinderGeometry args={[18, 22, 80, 12]} />
+      <mesh position={[0, 30 * scale, 0]} scale={[scale, 1, scale]} castShadow>
+        <cylinderGeometry args={[2.5, 3, 60, 10]} />
         <meshStandardMaterial color="#0d0d10" roughness={0.9} />
       </mesh>
-      <mesh position={[GREECE_PLANNED.x, 6, GREECE_PLANNED.z]} castShadow>
-        <boxGeometry args={[60, 12, 60]} />
+      <mesh position={[GREECE_PLANNED.x, 1.5 * scale, GREECE_PLANNED.z]} scale={[scale, 1, scale]} castShadow>
+        <boxGeometry args={[8, 3, 8]} />
         <meshStandardMaterial color="#e8e0c8" />
       </mesh>
     </>
@@ -733,7 +770,8 @@ function Scene({
       {!(overview && isometric) && <fog attach="fog" args={["#142d3c", 140, 700]} />}
       <ambientLight intensity={1.3} />
       <directionalLight position={[12, 25, 8]} intensity={2} castShadow />
-      <WorldMarkers />
+      <WorldMarkers scale={overview && isometric ? 8 : 1} />
+      <Constellation />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
         <planeGeometry args={[20000, 20000]} />
         <meshStandardMaterial
