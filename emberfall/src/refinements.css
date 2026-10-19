@@ -91,3 +91,12 @@
 .message-history li + li {
   margin-top: 2px;
 }
+
+/* Development-only test player switch. Never rendered in production builds. */
+.debug-toggle {
+  min-height: 30px;
+  padding: 4px 10px;
+  font-size: 12px;
+  border-style: dashed;
+  color: #f1ce79;
+}

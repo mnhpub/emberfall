@@ -439,3 +439,51 @@ test("holding S on deck walks the player toward the helm and the hint follows", 
     await context.close();
   }
 });
+
+test("a test player takes the helm, sets sail, and sails the ferry (dev test player)", async () => {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 960 } });
+  const page = await context.newPage();
+  page.setDefaultTimeout(15000);
+  const pageErrors: string[] = [];
+  page.on("pageerror", (e) => pageErrors.push(e.message));
+  try {
+    await page.goto(WEB);
+    await page.locator('canvas[data-controls-ready="true"]').waitFor();
+    await page.getByRole("button", { name: /^Shipwright/ }).click();
+    await page.getByRole("button", { name: "Test player: off" }).click();
+    await page.locator(".helm-hint").waitFor();
+    // Five metres from the wheel, the helm is refused and the panel says why.
+    assert.notEqual(await page.getByRole("button", { name: /H · Take ferry helm/ }).getAttribute("disabled"), null);
+    // Walk aft in short steps until the panel reads the wheel as in reach.
+    await page.bringToFront();
+    await page.evaluate(() => document.body.focus());
+    for (let i = 0; i < 20; i++) {
+      if ((await page.locator(".helm-hint").textContent())?.includes("At the helm wheel")) break;
+      await page.keyboard.down("KeyS");
+      await page.waitForTimeout(400);
+      await page.keyboard.up("KeyS");
+      await page.waitForTimeout(1100);
+    }
+    await page.locator(".helm-hint", { hasText: "At the helm wheel" }).waitFor();
+    await page.getByRole("button", { name: /H · Take ferry helm/ }).click();
+    await page.getByText(/At helm\. Set sails/).waitFor();
+    // Set sail, then hold W until the ferry is moving.
+    await page.getByRole("button", { name: "Set / furl ferry sails" }).click();
+    await page.getByText("Canvas set. W gathers way.").waitFor();
+    await page.keyboard.down("KeyW");
+    try {
+      await page.waitForFunction(() => {
+        const m = /Canvas set · ([\d.]+) m\/s/.exec(document.body.innerText);
+        return m !== null && Number(m[1]) > 0.1;
+      }, undefined, { timeout: 30000 });
+    } finally {
+      await page.keyboard.up("KeyW");
+    }
+    // Release the helm: the ferry keeps moving with the sails set.
+    await page.getByRole("button", { name: /H · Release ferry helm/ }).click();
+    await page.getByText(/Helm released/).waitFor();
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await context.close();
+  }
+});
