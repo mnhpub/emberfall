@@ -3,6 +3,7 @@ import AuthorityPanel from './components/AuthorityPanel';
 import SharedRoomPanel from './components/SharedRoomPanel';
 import SharedScene from './game/SharedScene';
 import MusicToggle from './audio/MusicToggle';
+import { DebugTestPlayer } from './debug/DebugTestPlayer';
 import { AuthorityClient } from '../packages/authority/client';
 import type { AuthorityMode, CustodyIntent, Frame, Intent, SharedView } from '../packages/authority/protocol';
 import { isColonyIntent, type ColonyIntent } from '../packages/colonies';
@@ -279,6 +280,15 @@ export default function App() {
         <div className="sea-header-status">
           <span>{online?(roomView?'SHARED COLONY ROOM':'PRIVATE ONLINE EXPEDITION'):'LOCAL SIMULATION'} · {storage}</span>
           <MusicToggle />
+          {import.meta.env.DEV && (
+            <DebugTestPlayer
+              saveKey={SAVE_KEY}
+              onSwitch={(next) => {
+                simulation.current = next;
+                setState(next);
+              }}
+            />
+          )}
         </div>
       </header>
       <aside className="sea-panel">
