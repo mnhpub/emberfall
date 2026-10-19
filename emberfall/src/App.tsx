@@ -516,7 +516,38 @@ function Pyramid({
 }
 // Classic isometric: pitch atan(1/sqrt2) ≈ 35.26°, yaw 45°. Equal x, y, z offsets give that angle.
 const ISO_OFFSET = 200 / Math.sqrt(3);
-const ISO_VIEW_HEIGHT = 180; // world units visible from top to bottom of the canvas (the ferry is 160 m)
+// Planned Greek colony on a tributary. Its real position is not decided yet; this placeholder is shown on the map only.
+export const GREECE_PLANNED = { x: -60, z: 40 };
+
+// The isometric map frames the whole known world: Haven, the Aurum dock, the lodestone at the origin and the ferry pier.
+const WORLD_POINTS = [
+  { x: -10, z: 13 }, // Ember Haven
+  { x: 7, z: -19 }, // Aurum river dock
+  { x: 0, z: 0 }, // lodestone
+  { x: 106, z: 180 }, // ferry pier
+  { x: GREECE_PLANNED.x, z: GREECE_PLANNED.z }, // planned Greek colony
+];
+const WORLD_CENTRE = {
+  x: (Math.min(...WORLD_POINTS.map((p) => p.x)) + Math.max(...WORLD_POINTS.map((p) => p.x))) / 2,
+  z: (Math.min(...WORLD_POINTS.map((p) => p.z)) + Math.max(...WORLD_POINTS.map((p) => p.z))) / 2,
+};
+const ISO_VIEW_HEIGHT = 260; // world units visible from top to bottom of the canvas
+
+// The lodestone pillar at the origin and the planned Greek colony marker.
+function WorldMarkers() {
+  return (
+    <>
+      <mesh position={[0, 30, 0]} castShadow>
+        <cylinderGeometry args={[2.5, 3, 60, 10]} />
+        <meshStandardMaterial color="#0d0d10" roughness={0.9} />
+      </mesh>
+      <mesh position={[GREECE_PLANNED.x, 1.5, GREECE_PLANNED.z]} castShadow>
+        <boxGeometry args={[8, 3, 8]} />
+        <meshStandardMaterial color="#e8e0c8" />
+      </mesh>
+    </>
+  );
+}
 
 // Per-frame logic in Scene moves this camera over the vessel; mounting only sets the frustum.
 function IsoCamera() {
@@ -649,9 +680,9 @@ function Scene({
       beast.current.visible = s.beast.hp > 0;
       beast.current.position.y = 0.1 + Math.sin(clock.elapsedTime * 2) * 0.15;
     }
-    const focus = overview ? s.ferry.pose : s.position;
-    const attached = s.mode === "ferry" ? s.ferry.passenger : null;
     const iso = overview && isometric;
+    const focus = iso ? WORLD_CENTRE : overview ? s.ferry.pose : s.position;
+    const attached = s.mode === "ferry" ? s.ferry.passenger : null;
     const offset =
       attached && !overview
         ? localToWorld(
@@ -695,6 +726,7 @@ function Scene({
       {!(overview && isometric) && <fog attach="fog" args={["#142d3c", 140, 700]} />}
       <ambientLight intensity={1.3} />
       <directionalLight position={[12, 25, 8]} intensity={2} castShadow />
+      <WorldMarkers />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
         <planeGeometry args={[1200, 1200]} />
         <meshStandardMaterial
