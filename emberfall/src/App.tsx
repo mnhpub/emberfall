@@ -515,9 +515,10 @@ function Pyramid({
   );
 }
 // Classic isometric: pitch atan(1/sqrt2) ≈ 35.26°, yaw 45°. Equal x, y, z offsets give that angle.
-const ISO_OFFSET = 200 / Math.sqrt(3);
-// Planned Greek colony on a tributary. Its real position is not decided yet; this placeholder is shown on the map only.
-export const GREECE_PLANNED = { x: -60, z: 40 };
+const ISO_OFFSET = 6000 / Math.sqrt(3); // camera distance, far enough back to see the whole world
+// Greece lies on the far side of the lodestone from Ember Haven. Players sail past the rock and steer by the compass,
+// and Greece is the meeting place for alliances. The exact coordinates are a placeholder until the river design is settled.
+export const GREECE_PLANNED = { x: 1800, z: -2400 };
 
 // The isometric map frames the whole known world: Haven, the Aurum dock, the lodestone at the origin and the ferry pier.
 const WORLD_POINTS = [
@@ -531,18 +532,24 @@ const WORLD_CENTRE = {
   x: (Math.min(...WORLD_POINTS.map((p) => p.x)) + Math.max(...WORLD_POINTS.map((p) => p.x))) / 2,
   z: (Math.min(...WORLD_POINTS.map((p) => p.z)) + Math.max(...WORLD_POINTS.map((p) => p.z))) / 2,
 };
-const ISO_VIEW_HEIGHT = 260; // world units visible from top to bottom of the canvas
+// Frame the whole span of the known world, with a margin.
+const ISO_VIEW_HEIGHT = Math.ceil(
+  Math.max(
+    Math.max(...WORLD_POINTS.map((p) => p.x)) - Math.min(...WORLD_POINTS.map((p) => p.x)),
+    Math.max(...WORLD_POINTS.map((p) => p.z)) - Math.min(...WORLD_POINTS.map((p) => p.z)),
+  ) * 1.3,
+); // world units visible from top to bottom of the canvas
 
 // The lodestone pillar at the origin and the planned Greek colony marker.
 function WorldMarkers() {
   return (
     <>
-      <mesh position={[0, 30, 0]} castShadow>
-        <cylinderGeometry args={[2.5, 3, 60, 10]} />
+      <mesh position={[0, 40, 0]} castShadow>
+        <cylinderGeometry args={[18, 22, 80, 12]} />
         <meshStandardMaterial color="#0d0d10" roughness={0.9} />
       </mesh>
-      <mesh position={[GREECE_PLANNED.x, 1.5, GREECE_PLANNED.z]} castShadow>
-        <boxGeometry args={[8, 3, 8]} />
+      <mesh position={[GREECE_PLANNED.x, 6, GREECE_PLANNED.z]} castShadow>
+        <boxGeometry args={[60, 12, 60]} />
         <meshStandardMaterial color="#e8e0c8" />
       </mesh>
     </>
@@ -558,7 +565,7 @@ function IsoCamera() {
       position={[ISO_OFFSET, ISO_OFFSET, ISO_OFFSET]}
       zoom={height / ISO_VIEW_HEIGHT}
       near={0.1}
-      far={1000}
+      far={20000}
     />
   );
 }
@@ -728,7 +735,7 @@ function Scene({
       <directionalLight position={[12, 25, 8]} intensity={2} castShadow />
       <WorldMarkers />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
-        <planeGeometry args={[1200, 1200]} />
+        <planeGeometry args={[20000, 20000]} />
         <meshStandardMaterial
           color={waterField(view, view.position.z) > 0 ? "#236e78" : "#28536c"}
           roughness={0.35}

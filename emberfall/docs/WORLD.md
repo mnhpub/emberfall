@@ -45,6 +45,7 @@ Depth is a property of the water, not a separate terrain class. A ship grounds i
 ## 4. Settlements
 
 - **Village:** a small upstream settlement. It produces raw goods, needs food to stay populated, and has no recipes of its own. It can be founded on land next to a river or stream.
+- **Greece:** the planned meeting place for alliances and important conversations. It lies on the far side of the lodestone from Ember Haven, so players sail past the rock and steer by the compass to reach it. The placeholder position is (1800, -2400) (`GREECE_PLANNED` in `src/App.tsx`).
 - **Colony:** a larger settlement with recipes, reserves, contracts and a focus (see `COLONY_ECONOMY.md`). Colonies are the production centres of the river.
 - **Self-sustaining colony:** a colony whose production covers its own consumption over one full cycle. It keeps its reserves above zero through the cycle, and it can export a surplus without drawing down its reserves. It does not need cargo from elsewhere to keep its population fed.
 
