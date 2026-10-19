@@ -1,3 +1,4 @@
+import { accountRoute } from './account-routes.ts';
 import { authorityRoute, type AuthorityEnv } from './authority.ts';
 export { AuthoritySession } from './authority.ts';
 export { SharedWorld } from './shared-world.ts';
@@ -26,6 +27,8 @@ export default {
     if (url.pathname.startsWith('/api/authority/') || url.pathname.startsWith('/api/world/')) return authorityRoute(request, env);
     if (request.method === 'OPTIONS') return new Response(null, { headers: { 'access-control-allow-origin': '*', 'access-control-allow-methods': 'GET,POST,OPTIONS', 'access-control-allow-headers': 'content-type,authorization' } });
     if (url.pathname === '/api/health') return json({ status: 'ok', service: 'emberfall-api', version: '0.1.0', persistence: Boolean(env.DB), rooms: Boolean(env.WORLD_ROOMS) });
+
+    if (url.pathname.startsWith('/api/account/')) return accountRoute(request, env);
 
     // Private staging gate only. Production requires per-user sessions and membership.
     if (!env.SESSION_TOKEN || !env.PLAYER_ID) return json({ error: 'Persistent APIs disabled until staging credentials are configured.' }, 503);
